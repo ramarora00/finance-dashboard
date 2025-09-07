@@ -1,22 +1,33 @@
 import streamlit as st
-import yfinance as yf
+import pandas as pd
 import plotly.express as px
-
-from features.sidebar import get_user_input
+from features.data_fetcher import get_stock_data
 
 st.title("📊 Stock Market Dashboard")
 
-# Get sidebar inputs
-ticker, period, interval = get_user_input()
+# --- Input ---
+ticker = st.text_input("Enter Stock Symbol", "RELIANCE.NS")
 
-# Fetch data
 if ticker:
-    df = yf.download(ticker, period=period, interval=interval)
+    # --- Get Data ---
+    df = get_stock_data(ticker)
     
-    if df.empty:
-        st.error(f"No data found for ticker {ticker} with period={period} and interval={interval}")
-    else:
-        df.columns = df.columns.str.strip().str.title()  # Strip & fix column names
-        st.write(df.tail())
+    # --- Show Table ---
+    st.subheader(f"{ticker} - Latest Data")
+    st.write(df.tail())
+
+    # --- Plot Close Price ---
+    if "Close" in df.columns:
         fig = px.line(df, x=df.index, y="Close", title=f"{ticker} Stock Price")
         st.plotly_chart(fig)
+    else:
+        st.warning("No 'Close' column found in data.")
+
+    # --- CSV Download ---
+    csv = df.to_csv(index=True)
+    st.download_button(
+        label="Download CSV",
+        data=csv,
+        file_name=f"{ticker}_data.csv",
+        mime="text/csv"
+    )
