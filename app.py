@@ -2,11 +2,19 @@ import streamlit as st
 from src.data import get_stock_data
 from src.helpers import format_number, compute_indicators
 from src.ui import render_dashboard
+from src.ui import show_ticker_bar
+
 
 st.set_page_config(page_title="📊 Stock Market Dashboard", layout="wide")
+tickers = ["RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS", "TATAMOTOR.NS" , "DMART.NS", "TITAN.NS", "BAJFINANCE.NS"]
+show_ticker_bar(tickers)
+
 st.title("📈 Stock Market Dashboard (yfinance)")
 
 # Sidebar controls
+
+
+
 with st.sidebar:
     st.header("⚙️ Controls")
     ticker = st.text_input("Ticker (e.g. RELIANCE.NS, TCS.NS, AAPL)", value="RELIANCE.NS")

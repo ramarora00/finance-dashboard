@@ -1,7 +1,60 @@
 import streamlit as st
 import plotly.graph_objects as go
-
 from src.helpers import format_number
+import streamlit as st
+import yfinance as yf
+import time
+
+
+
+def show_ticker_bar(tickers):
+    def get_live_prices(ticker):
+        try:
+            data = yf.download(ticker, period="1d", interval="1m", progress=False)
+            if data.empty or len(data) < 2:
+                return None, None  # agar data insufficient ho
+            last = float(data["Close"].iloc[-1])
+            prev = float(data["Close"].iloc[-2])
+            change = float((last - prev) / prev * 100)
+
+            return last, change
+        except Exception as e:
+            return None, None
+
+    ticker_items = []
+    for t in tickers:
+        last, change = get_live_prices(t)
+        if last is not None:
+            color = "limegreen" if change > 0 else "red"
+            arrow = "▲" if change > 0 else "▼"
+            ticker_items.append(
+                f"<span style='margin-right:40px; color:{color}; font-weight:600;'>{t} ₹{last:.2f} {arrow}{change:.2f}%</span>"
+            )
+            time.sleep(1.5)
+        time.sleep(.5)  # API rate limit ke liye thoda wait karna
+
+    if ticker_items:
+        ticker_html = " ".join(ticker_items)
+        st.markdown(
+            f"""
+            <div style="overflow:hidden; white-space:nowrap; box-sizing:border-box;">
+                <div style="display:inline-block; padding-left:100%; animation: ticker 20s linear infinite; font-size:16px;">
+                    {ticker_html}
+                </div>
+            </div>
+            <style>
+            @keyframes ticker {{
+                0%   {{ transform: translateX(0%); }}
+                100% {{ transform: translateX(-100%); }}
+            }}
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+    else:
+        st.info("Ticker data unavailable.")
+
+
 
 
 def render_dashboard(df_ind, info, ticker, download_data: bool):
