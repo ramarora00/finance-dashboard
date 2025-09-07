@@ -1,33 +1,31 @@
 import streamlit as st
-import pandas as pd
-import plotly.express as px
-from features.data_fetcher import get_stock_data
+from src.data import get_stock_data
+from src.helpers import format_number, compute_indicators
+from src.ui import render_dashboard
 
-st.title("📊 Stock Market Dashboard")
+st.set_page_config(page_title="📊 Stock Market Dashboard", layout="wide")
+st.title("📈 Stock Market Dashboard (yfinance)")
 
-# --- Input ---
-ticker = st.text_input("Enter Stock Symbol", "RELIANCE.NS")
+# Sidebar controls
+with st.sidebar:
+    st.header("⚙️ Controls")
+    ticker = st.text_input("Ticker (e.g. RELIANCE.NS, TCS.NS, AAPL)", value="RELIANCE.NS")
+    period = st.selectbox("Period", ["1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "max"], index=2)
+    interval = st.selectbox("Interval", ["1d", "1wk", "1mo"], index=0)
+    download_data = st.checkbox("Show download CSV button", value=True)
 
 if ticker:
-    # --- Get Data ---
-    df = get_stock_data(ticker)
-    
-    # --- Show Table ---
-    st.subheader(f"{ticker} - Latest Data")
-    st.write(df.tail())
+    try:
+        df, info = get_stock_data(ticker.strip(), period, interval)
 
-    # --- Plot Close Price ---
-    if "Close" in df.columns:
-        fig = px.line(df, x=df.index, y="Close", title=f"{ticker} Stock Price")
-        st.plotly_chart(fig)
-    else:
-        st.warning("No 'Close' column found in data.")
+        if df is None or df.empty or "Close" not in df.columns:
+            st.error("⚠️ No data found for this ticker/period/interval. Try another symbol or adjust the period.")
+        else:
+            # Compute indicators
+            df_ind = compute_indicators(df)
 
-    # --- CSV Download ---
-    csv = df.to_csv(index=True)
-    st.download_button(
-        label="Download CSV",
-        data=csv,
-        file_name=f"{ticker}_data.csv",
-        mime="text/csv"
-    )
+            # Render everything (company header, tabs, charts, table, download)
+            render_dashboard(df_ind, info, ticker, download_data)
+
+    except Exception as e:
+        st.error(f"❌ Error fetching data: {e}")
